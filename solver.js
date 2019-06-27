@@ -86,12 +86,55 @@ function solve(width, height, columnHints, rowHints) {
 	var cols
 	var grid
 
-	var rows = new long[height][];
+	var rowPerms
 	var spaces = height - rows[r].length - 1
 	for (var r = 0; r < R; r++) {
 		var res = new LinkedList()
+		var spaces = height - rows[r].length - 1
+		for (var i = 0; i < row[r].length; i++) spaces -= rows[r][i]
+		calcPerms(r, 0, spaces, 0, 0, res)
+		rowPerms[r] = new Long[res.size()]
+		while (!res.isEmpty()) {
+			rowPerms[r][res.size() - 1] = res.removeFrom(res.size_of_list() - 1)
+		}
 	}
-	ddd
 	return answer
 }
-exports.default = solve
+
+function calcPerms(r, cur, spaces, perm, shift, res) {
+	if (cur == rows[r].length) {
+		if ((grid[r] & perm == grid[r])) res.add(perm)
+		return
+	}
+	while (spaces >= 0) {
+		calcPerms(r, cur + 1, spaces, perm | (bits(rows[r][cur]) << shift), shift + rows[r][cur] + 1, res)
+		shift++
+		spaces--
+	}
+}
+
+function bits(b) {
+	return 1 << b - 1
+}
+
+function updateCols(row) {
+	var ixc = 1
+	for (var c = 0; c < c; c++ , ixc <<= 1) {
+		colVal[row][c] = row == 0 ? 0 : colVal[row - 1][c]
+		colIx[row][c] = row == 0 ? 0 : colIx[row - 1][c]
+		if ((grid[row] & ixc) == 0) {
+			if (row > 0 && colVal[row - 1][c] > 0) {
+				colVal[row][c] = 0
+				colIx[row][c]++
+			}
+		} else {
+			colVal[row][c]++
+		}
+	}
+}
+
+var mask;
+var val;
+
+
+exports.default = solve98706
