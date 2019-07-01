@@ -1,29 +1,30 @@
-// solve.js
-console.log(solve(13, 5, [[1], [1], [5], [], [1, 1], [], [1, 1, 1], [1, 1, 1], [5], [], [3, 1], [1, 1, 1], [1, 3]], [[3, 3, 3], [1, 1, 1, 1], [1, 3, 3], [1, 1, 1, 1], [1, 3, 3]]))
-
 function solve(width, height, columnHints, rowHints) {
+	// start(): timer start
 	let grid = Array(height).fill().map(() => Array(width).fill(-1))
 	preProcess(grid, width, height, rowHints)
 	grid = transpose(preProcess(transpose(grid), height, width, columnHints))
 	while (isNotFinished(grid)) {
-		for (let i = 0; i < height; i++) {
-			let rowSum, lineSum
-			for (let j = 0; j < rowHints.length; j++) rowSum += rowHints[i][j]
-			for (j = 0; j < width; j++) lineSum = grid[i][j]
-			if (lineSum == rowSum) continue
-			const numOfBlanks = width - rowHints[i].reduce((p, c) => p + c) - rowHints[i].length + 1
-			processOneLine(grid[i], numOfBlanks, rowHints[i])
-			process.exit(0)
-			//	let mostModified = findMostModified(grid)
-			// console.log(mostModified)
-			// console.log(grid)
-			// process.exit(0)
-
-			j
-		}
+		processWholeGrid(grid, width, height, rowHints)
+		grid = processWholeGrid(transpose(grid), height, width, columnHints)
 	}
-	const answer = [] // 여기에 작성
+	const answer = [].concat(...grid)
+	// end(): timer end, print elapsed time
 	return answer
+}
+
+function processWholeGrid(grid, width, height, rowHints) {
+	for (let i = 0; i < height; i++) {
+		if (rowHints[i].length == 0) continue;
+
+		let rowSum, lineSum
+		for (let j = 0; j < rowHints.length; j++) rowSum += rowHints[i][j]
+		for (j = 0; j < width; j++) lineSum = grid[i][j]
+		if (lineSum == rowSum) continue
+
+		const numOfBlanks = width - rowHints[i].reduce((p, c) => p + c) - rowHints[i].length + 1
+		processOneLine(grid[i], numOfBlanks, rowHints[i])
+	}
+	return transpose(grid)
 }
 
 function processOneLine(line, numOfBlanks, hintsArray) {
@@ -38,7 +39,6 @@ function processOneLine(line, numOfBlanks, hintsArray) {
 	possibleIdxs.unshift(0)
 	const combinations = getCombinationsOf(possibleIdxs, numOfBlanks)
 	let baseline = getBaseLine(hintsArray)
-	let candidates = baseline.slice()
 	let possibleLists = []
 	const insert = (arr, index, ...newItems) => [
 		...arr.slice(0, index),
@@ -53,11 +53,8 @@ function processOneLine(line, numOfBlanks, hintsArray) {
 		possibleLists.push(candidates)
 	}
 
-	console.log(line)
 	const realCandidates = pruneLists(possibleLists, line)
 	markConjunction(realCandidates, line)
-	console.log(line)
-	process.exit(0)
 }
 
 function pruneLists(possibleLists, line) {
@@ -70,7 +67,6 @@ function pruneLists(possibleLists, line) {
 			}
 		}
 	}
-
 	return possibleLists
 }
 
@@ -84,7 +80,6 @@ function markConjunction(realCandidates, line) {
 		lineNo++
 	}
 }
-
 
 function preProcess(grid, width, height, hints) {
 	for (var i = 0; i < height; i++) {
@@ -176,39 +171,16 @@ function isNotFinished(grid) {
 	return false
 }
 
-function findMostModified(grid) {
-	let rowMax = [0];
-	for (let i = 0; i < grid.length; i++) {
-		let count = 0
-		for (let j = 0; j < grid[i].length; j++) {
-			if (grid[i][j] !== -1)
-				count += 1
-		}
-		if (rowMax[0] < count) {
-			rowMax[0] = count
-			rowMax[1] = i
-		}
-	}
+function start() {
+	startTime = new Date()
+}
 
-	let columnMax = [0]
-	grid = transpose(grid)
-	for (let i = 0; i < grid.length; i++) {
-		let count = 0
-		for (let j = 0; j < grid[i].length; j++) {
-			if (grid[i][j] !== -1)
-				count += 1
-		}
-		if (columnMax[0] < count) {
-			columnMax[0] = count
-			columnMax[1] = i
-		}
-	}
-
-	let max = rowMax[0] >= columnMax[0] ? rowMax : columnMax
-	if (max[0] == rowMax[0])
-		grid = transpose(grid)
-
-	return max[1]
+function end() {
+	endTime = new Date()
+	var timeDiff = endTime - startTime;
+	timeDiff /= 1000
+	var seconds = timeDiff
+	console.log(seconds + " seconds")
 }
 
 exports.default = solve
