@@ -9,6 +9,30 @@ function solve(width, height, columnHints, rowHints) {
 	preProcess(grid, width, height, rowHints)
 	grid = transpose(preProcess(transpose(grid), height, width, columnHints))
 
+	let gridSum = 0
+	for (let i = 0; i < grid.length; i++) {
+		for (let j = 0; j < grid[i].length; j++) {
+			gridSum += grid[i][j]
+		}
+	}
+	const isNonHeuristic = gridSum === width * height * -1
+	if (isNonHeuristic) {
+		for (let i = 0; i < grid.length; i++) {
+			for (let j = 0; j < grid[i].length; j++) {
+				grid[i][j] = 0
+			}
+		}
+		backTrack(0, grid, width, height, rowHints, columnHints)
+		for (let i = 0; i < grid.length; i++) {
+			for (let j = 0; j < grid[i].length; j++) {
+				if (grid[i][j] == -1)
+					grid[i][j] = 0
+			}
+		}
+		//end()
+		return [].concat(...grid)
+	}
+
 	while (isNotFinished(grid)) {
 		let transHints = columnHints
 		processWholeGrid(grid, width, height, rowHints, transHints)
@@ -199,6 +223,82 @@ function getBaseLine(hintsArray) {
 	return leftCombination
 }
 
+function backTrack(ri, grid, width, height, rowHints, columnHints) {
+	for (let ci = 0; ci < height; ci++) {
+		if (check_col(ci, grid, columnHints) == false) return false;
+	}
+	if (ri == width || ri > width)
+		return true;
+	let hintSum = 0
+	for (let j = 0; j < rowHints[ri].length; j++) {
+		hintSum += rowHints[ri][j]
+	}
+	let gap = []
+	for (let j = 0; j < rowHints[ri].length; j++)
+		gap.push(1)
+	gap[0] = 0
+	do {
+		let pos = gap[0]
+		for (let ci = 0; ci < gap[0]; ci++)
+			grid[ri][ci] = -1
+		for (let rhi = 0; rhi < rowHints[ri].length; rhi++) {
+			for (let ci = 0; ci < rowHints[ri][rhi]; ci++) {
+				grid[ri][pos + ci] = 1
+			}
+			pos += rowHints[ri][rhi]
+			if (rhi == rowHints[ri].length - 1) continue
+
+			for (let ci = 0; ci < gap[rhi + 1]; ci++) {
+				grid[ri][pos + ci] = -1
+			}
+			pos += gap[rhi + 1]
+		}
+		for (let ci = pos; ci < height; ci++) grid[ri][ci] = -1
+
+		if (backTrack(ri + 1, grid, width, height, rowHints, columnHints) == true)
+			return true
+
+		for (let ci = 0; ci < height; ci++) grid[ri][ci] = 0;
+		let gi = gap.length - 1
+		gap[gi]++
+		while (hintSum + gap.reduce((p, c) => p + c) > height && gi > 0) {
+			gap[gi - 1]++;
+			gap[gi] = 1;
+			gi--
+		}
+	} while (hintSum + gap.reduce((p, c) => p + c) <= height)
+
+	return false
+}
+
+function check_col(ci, grid, columnHints) {
+	let run = 0
+	let chi = 0;
+	for (let ri = 0; ri < grid[1].length; ri++) {
+		if (grid[ri][ci] == 1) {
+			run++;
+			if (chi >= columnHints[ci].length || run > columnHints[ci][chi])
+				return false;
+		}
+		else if (grid[ri][ci] == 0) return true;
+		else if (grid[ri][ci] == -1 && run > 0) {
+			if (run != columnHints[ci][chi])
+				return false;
+			run = 0;
+			chi++;
+		}
+	}
+	if (run > 0) {
+		if (run != columnHints[ci][chi])
+			return false;
+		chi++;
+	}
+	if (chi != columnHints[ci].length)
+		return false;
+
+	return true;
+}
+
 function transpose(arr) {
 	return Object.keys(arr[0]).map(function (c) {
 		return arr.map(function (r) { return r[c]; });
@@ -259,7 +359,5 @@ function end() {
 	var seconds = timeDiff
 	console.log(seconds + " seconds")
 }
-
-
 
 exports.default = solve
