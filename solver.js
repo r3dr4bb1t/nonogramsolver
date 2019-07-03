@@ -1,10 +1,6 @@
 // solve.js
 
-var uniqThreshold
-
 function solve(width, height, columnHints, rowHints) {
-	//start() timer start
-	uniqThreshold = {}
 	let grid = Array(height).fill().map(() => Array(width).fill(-1))
 	preProcess(grid, width, height, rowHints)
 	grid = transpose(preProcess(transpose(grid), height, width, columnHints))
@@ -29,32 +25,45 @@ function solve(width, height, columnHints, rowHints) {
 					grid[i][j] = 0
 			}
 		}
-		//end()
 		return [].concat(...grid)
 	}
-
+	let count = 0;
 	while (isNotFinished(grid)) {
-		let transHints = columnHints
-		processWholeGrid(grid, width, height, rowHints, transHints)
-
-		transHints = rowHints
-		grid = processWholeGrid(transpose(grid), height, width, columnHints, transHints)
+		processWholeGrid(grid, width, height, rowHints)
+		grid = transpose(processWholeGrid(transpose(grid), height, width, columnHints))
+		count++
+		if (count > 50)
+			break;
 	}
-	//end() timer end, print elapsed time
+	if (count > 50) {
+		for (let i = 0; i < grid.length; i++) {
+			for (let j = 0; j < grid[i].length; j++) {
+				grid[i][j] = 0
+			}
+		}
+		backTrack(0, grid, width, height, rowHints, columnHints)
+		for (let i = 0; i < grid.length; i++) {
+			for (let j = 0; j < grid[i].length; j++) {
+				if (grid[i][j] == -1)
+					grid[i][j] = 0
+			}
+		}
+		return [].concat(...grid)
+	}
 	const answer = [].concat(...grid)
 	return answer
 }
 
-function processWholeGrid(grid, width, height, rowHints, transHints = []) {
+function processWholeGrid(grid, width, height, rowHints) {
 	for (let i = 0; i < height; i++) {
 		if (isLineFinished(grid[i], rowHints[i])) continue
 		const numOfBlanks = width - rowHints[i].reduce((p, c) => p + c) - rowHints[i].length + 1
-		processOneLine(grid, grid[i], numOfBlanks, rowHints[i], transHints)
+		processOneLine(grid[i], numOfBlanks, rowHints[i])
 	}
-	return transpose(grid)
+	return grid
 }
 
-function processOneLine(grid, line, numOfBlanks, hintsArray, transHints) {
+function processOneLine(line, numOfBlanks, hintsArray) {
 	var hints = hintsArray.slice()
 	hints = hints.map((hint) => hint + 1)
 	var possibleIdxs = []
@@ -81,40 +90,7 @@ function processOneLine(grid, line, numOfBlanks, hintsArray, transHints) {
 	}
 	const realCandidates = pruneLists(possibleLists, line)
 	markConjunction(realCandidates, line)
-
-	if (uniqThreshold[line] > 50) bruteForce(line, grid, hintsArray, transHints)
 }
-
-function bruteForce(line, grid, hintsArray, transHints) {
-	for (let j = 0; j < line.length; j++) {
-		let wrongMove = false
-		if (line[j] == -1) {
-			line[j] = 1
-
-			grid = transpose(grid)
-			for (let i = 0; i < grid.length; i++) {
-				isLineFinished(grid[i], transHints[i])
-				if (isWrongMove(grid[i], transHints[i])) {
-					wrongMove = true
-				}
-			}
-			grid = transpose(grid)
-
-			if (wrongMove) {
-				line[j] = -1
-				continue
-			}
-			isLineFinished(line, hintsArray)
-			for (let j = 0; j < line.length; j++) {
-				if (line[j] == -1) line[j] = 0
-			}
-		}
-
-		uniqThreshold[line] = 0
-		break;
-	}
-}
-
 
 function pruneLists(possibleLists, line) {
 	for (const list of possibleLists) {
@@ -132,19 +108,13 @@ function pruneLists(possibleLists, line) {
 function markConjunction(realCandidates, line) {
 	const transposedList = transpose(realCandidates)
 	let lineNo = 0
-	let count = 0
 	for (const list of transposedList) {
 		const lineSum = list.reduce((p, c) => p + c)
 		if (lineSum == 0) line[lineNo] = 0
 		if (lineSum == list.length) line[lineNo] = 1
 		if (lineSum != 0 && lineSum != list.length) {
-			count++;
 		}
 		lineNo++
-	}
-	if (count == realCandidates.length) {
-		if (!uniqThreshold[line]) uniqThreshold[line] = 0
-		uniqThreshold[line]++
 	}
 }
 
@@ -332,19 +302,6 @@ function isLineFinished(line, hints) {
 		}
 		return true
 	}
-	return false
-}
-
-function isWrongMove(line, hints) {
-	let hintSum = 0
-	let lineSum = 0
-	for (let j = 0; j < hints.length; j++) {
-		hintSum += hints[j]
-	}
-	for (j = 0; j < line.length; j++) {
-		if (line[j] == 1) lineSum++
-	}
-	if (lineSum > hintSum) return true
 	return false
 }
 
